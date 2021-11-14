@@ -12,6 +12,8 @@ class RequestModel:
 		self.maxCpu = 10
 		self.minMemory = 5
 		self.maxMemory = 10
+		self.sfcDuration = 7
+		self.vlBandwidth = 10
 
 	def generateVNF(self, vnfID, sfcID):
 		cpu = random.randint(self.minCpu, self.maxCpu)
@@ -24,8 +26,7 @@ class RequestModel:
 		return vl
 
 	def generateSFC(self, sfcID, numberVNFS):
-		sfcDuration = 7
-		sfc = SFC(sfcID, sfcDuration)
+		sfc = SFC(sfcID, self.sfcDuration)
 		
 		for k in range(numberVNFS):
 			vnfID = sfcID + "_" + str(k)
@@ -34,8 +35,7 @@ class RequestModel:
 		
 		for k,v in enumerate(sfc.vnfList):
 			if k <= len(sfc.vnfList)-2: # dont consider the last vnf
-				vlBandwidth = 10
-				vl = self.generateVirtualLink(k, sfc.vnfList[k], sfc.vnfList[k+1], vlBandwidth, sfcID)
+				vl = self.generateVirtualLink(k, sfc.vnfList[k], sfc.vnfList[k+1], self.vlBandwidth, sfcID)
 				sfc.linkList.append(vl)
 		return sfc
 

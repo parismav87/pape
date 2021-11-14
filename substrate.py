@@ -7,6 +7,9 @@ class SubstrateModel:
 	def __init__(self):
 		self.numaList = []
 		self.busList = []
+		self.nrNumas = 2
+		self.nrCores = 4
+		self.busCapacity = 5
 
 	def createNumas(self, nrNumas, nrCores):
 		initMemoryCapacity = 50
@@ -21,18 +24,15 @@ class SubstrateModel:
 			self.numaList.append(n)
 
 	def createBuses(self):
-		busCapacity = 5
 		for k in range(len(self.numaList)-2):
-			b = Bus(self.numaList[k], self.numaList[k+1], busCapacity)
+			b = Bus(self.numaList[k], self.numaList[k+1], self.busCapacity)
 			self.busList.append(b)
 
 
 	def populate(self):
-		nrNumas = 2
-		nrCores = 4
-		nrBuses = 1
+	
 
-		self.createNumas(nrNumas, nrCores)
+		self.createNumas(self.nrNumas, self.nrCores)
 		self.createBuses()	
 
 	def getTotalMemory(self):
