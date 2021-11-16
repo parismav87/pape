@@ -4,7 +4,7 @@ class Schedule:
 
 	def assignToSingleNuma(self, sfc, numa, sub):
 		for vnf in sfc.vnfList:
-			bestFit = self.l2Norm(vnf)
+			bestFit = sub.l2Norm(vnf)
 			numaIndex = bestFit[0]
 			cpuIndex = bestFit[1]
 			sub.numaList[numaIndex].processWithoutCoreAssignment(vnf)
@@ -55,7 +55,7 @@ class Schedule:
 					if c <= cpu.capacity:
 						for vnf in sfc.vnfList:
 							cpu.process(vnf)
-						numa.processWithoutCoreAssignment(vnf)
+							numa.processWithoutCoreAssignment(vnf)
 						return True
 		return False
 
