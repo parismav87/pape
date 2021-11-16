@@ -2,9 +2,13 @@ class Schedule:
 	def __init__(self):
 		pass
 
-	def assignToSingleNuma(self, sfc, numa):
+	def assignToSingleNuma(self, sfc, numa, sub):
 		for vnf in sfc.vnfList:
-			numa.process(vnf)
+			bestFit = self.l2Norm(vnf)
+			numaIndex = bestFit[0]
+			cpuIndex = bestFit[1]
+			sub.numaList[numaIndex].processWithoutCoreAssignment(vnf)
+			sub.numaList[numaIndex].coreList[cpuIndex].process(vnf)
 
 
 	def handleRequest(self, sfc, sub):
@@ -34,8 +38,27 @@ class Schedule:
 					print("Failed in partitioning SFC ", sfc.id)
 
 			else: # no need to partition. Sort and assign
-				sortedCandidates = sorted(candidateNumas, key = lambda x: x.memoryCapacity, reverse = True)
-				self.assignToSingleNuma(sfc, sortedCandidates[0])
+				success = self.fitInSingleCore(sfc, sub)
+				if success:
+					print("successfully allocated sfc to single core")
+				else:
+					sortedCandidates = sorted(candidateNumas, key = lambda x: x.memoryCapacity, reverse = False)
+					self.assignToSingleNuma(sfc, sortedCandidates[0], sub)
+
+	def fitInSingleCore(self, sfc, sub):
+		c = sfc.getTotalCPU()
+		m = sfc.getTotalMemory()
+		
+		for numa in sub.numaList:
+			if m <= numa.memoryCapacity:
+				for cpu in numa.coreList:
+					if c <= cpu.capacity:
+						for vnf in sfc.vnfList:
+							cpu.process(vnf)
+						numa.processWithoutCoreAssignment(vnf)
+						return True
+		return False
+
 
 	def removeExpiredJobs(self, sub):
 		for numa in sub.numaList:

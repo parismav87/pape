@@ -1,6 +1,8 @@
 from core import *
 from numa import *
 from bus import *
+import math
+import numpy as np
 
 
 class SubstrateModel:
@@ -30,8 +32,6 @@ class SubstrateModel:
 
 
 	def populate(self):
-	
-
 		self.createNumas(self.nrNumas, self.nrCores)
 		self.createBuses()	
 
@@ -52,19 +52,36 @@ class SubstrateModel:
 		for numa in self.numaList:
 			numa.print()
 
+	def euclidean(self, vnf, numa, cpu):
+		if numa.memoryCapacity >= vnf.memoryDemand and cpu.capacity >= vnf.cpuDemand:
+			return math.sqrt((numa.memoryCapacity - vnf.memoryDemand)**2 + (cpu.capacity - vnf.cpuDemand)**2)
+		else:
+			return -1 #doesnt fit
+
+	def l2Norm(self, vnf):
+		# distances is a 2d array (because 2 resources are considered)
+		# x axis is numas and y axis are their cores
+		# so distances[1,1] is the eucl distance between a vnf and numa 1 - core 1
+		distances = np.zeros(shape=(len(self.numaList), len(self.numaList[0].coreList))) 
+		for x, numa in enumerate(self.numaList):
+			for y, cpu in enumerate(numa.coreList):
+				dist = self.euclidean(vnf, numa, cpu)
+				distances[x,y] = dist
+		# print(np.unravel_index(np.argmin(distances), distances.shape))
+		if np.amin(distances) != -1:
+			return np.unravel_index(np.argmin(distances), distances.shape)
+		else:
+			return (-1,-1)
+
+
 	def partition(self, sfc):
 		for vnf in sfc.vnfList:
-			assigned = False
-			for numa in self.numaList:
-				if numa.memoryCapacity >= vnf.memoryDemand: #if numa has enough memory
-					for core in numa.coreList:
-						if core.capacity >= vnf.cpuDemand:
-							core.process(vnf)
-							numa.processWithoutCoreAssignment(vnf)
-							assigned = True
-							break
-					if assigned:
-						break
-			if not assigned:
+			bestFit = self.l2Norm(vnf)
+			if bestFit != (-1,-1):
+				numaIndex = bestFit[0]
+				cpuIndex = bestFit[1]
+				self.numaList[numaIndex].processWithoutCoreAssignment(vnf)
+				self.numaList[numaIndex].coreList[cpuIndex].process(vnf)
+			else:
 				return False
-		return True
+			
